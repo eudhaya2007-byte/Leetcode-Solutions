@@ -1,0 +1,132 @@
+
+class Solution {
+public:
+    string buildPalindrome(const string& left, int mid) {
+        string ans = left;
+
+        if (mid != -1)
+            ans += char('a' + mid);
+
+        for (int i = (int)left.size() - 1; i >= 0; i--)
+            ans += left[i];
+
+        return ans;
+    }
+
+    string lexPalindromicPermutation(string s, string target) {
+        int n = s.size();
+        int half = n / 2;
+
+        // Count characters
+        vector<int> cnt(26, 0);
+        for (char c : s)
+            cnt[c - 'a']++;
+
+        // Check whether a palindrome can be formed
+        int odd = 0;
+        int mid = -1;
+
+        for (int i = 0; i < 26; i++) {
+            if (cnt[i] % 2) {
+                odd++;
+                mid = i;
+            }
+        }
+
+        if (odd > 1)
+            return "";
+
+        // Characters available for the left half
+        vector<int> halfCnt(26);
+        for (int i = 0; i < 26; i++)
+            halfCnt[i] = cnt[i] / 2;
+
+        /*
+            We need the smallest left half such that:
+
+            palindrome(left) > target
+        */
+
+        // First check if target's left half can be formed exactly
+        vector<int> rem = halfCnt;
+        string left;
+        bool possible = true;
+
+        for (int i = 0; i < half; i++) {
+            int x = target[i] - 'a';
+
+            if (rem[x] == 0) {
+                possible = false;
+                break;
+            }
+
+            rem[x]--;
+            left += target[i];
+        }
+
+        // If exact left half is possible, check the complete palindrome
+        if (possible) {
+            string candidate = buildPalindrome(left, mid);
+
+            if (candidate > target)
+                return candidate;
+        }
+
+        /*
+            Exact palindrome is not greater.
+            Find the smallest left half greater than target's left half.
+
+            Try changing the rightmost possible position to a larger
+            character, then fill the remaining positions with the
+            smallest available characters.
+        */
+
+        for (int pos = half - 1; pos >= 0; pos--) {
+            // Rebuild remaining counts for prefix target[0..pos-1]
+            rem = halfCnt;
+            bool prefixPossible = true;
+
+            for (int j = 0; j < pos; j++) {
+                int x = target[j] - 'a';
+
+                if (rem[x] == 0) {
+                    prefixPossible = false;
+                    break;
+                }
+
+                rem[x]--;
+            }
+
+            if (!prefixPossible)
+                continue;
+
+            int current = target[pos] - 'a';
+
+            // Try the smallest character greater than target[pos]
+            for (int c = current + 1; c < 26; c++) {
+                if (rem[c] == 0)
+                    continue;
+
+                string newLeft = target.substr(0, pos);
+                newLeft += char('a' + c);
+
+                rem[c]--;
+
+                // Fill remaining characters in sorted order
+                for (int k = 0; k < 26; k++) {
+                    while (rem[k] > 0) {
+                        newLeft += char('a' + k);
+                        rem[k]--;
+                    }
+                }
+
+                string answer = buildPalindrome(newLeft, mid);
+
+                if (answer > target)
+                    return answer;
+            }
+        }
+
+        return "";
+    }
+};
